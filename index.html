@@ -1,0 +1,598 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极简78张全牌塔罗 · 绿茵星轨道引器</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #fcfbfa; /* 极简暖调羊皮纸白 */
+            color: #2e2836; /* 雅致深岩紫 */
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(217, 119, 6, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(124, 58, 237, 0.04) 0%, transparent 40%),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='%23d97706' fill-opacity='0.015'%3E%3Ccircle cx='40' cy='40' r='1'/%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .cinzel-title {
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.12em;
+        }
+
+        /* 3D 翻牌动画核心控制 */
+        .perspective-1000 {
+            perspective: 1200px;
+        }
+
+        .tarot-card-inner {
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+
+        .tarot-card-flip {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            backface-visibility: hidden;
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #fdfbfa, #f5efe4);
+            z-index: 2;
+        }
+
+        .card-front {
+            transform: rotateY(180deg);
+            z-index: 1;
+            background: #ffffff;
+        }
+
+        /* 优雅的金色磨砂质感边框 */
+        .mystic-border {
+            border: 1px solid rgba(217, 119, 6, 0.22);
+            box-shadow: 0 10px 30px rgba(217, 119, 6, 0.03);
+        }
+
+        .mystic-border:hover {
+            border-color: rgba(217, 119, 6, 0.45);
+        }
+
+        /* 自定义微动效 */
+        @keyframes orbit {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .orbit-slow {
+            animation: orbit 150s linear infinite;
+        }
+
+        @keyframes shuffle {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(0.9) rotate(-3deg) translateX(-15px); }
+            75% { transform: scale(0.95) rotate(3deg) translateX(15px); }
+        }
+        .shuffling-active {
+            animation: shuffle 0.6s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- 顶端白魔法神秘对称星盘装饰（优雅金色细线） -->
+    <header class="w-full relative py-10 px-4 overflow-hidden border-b border-amber-500/10 bg-gradient-to-b from-[#f9f7f2] to-[#fbf9f5]">
+        <div class="absolute inset-0 pointer-events-none opacity-[0.15] flex justify-center">
+            <svg class="w-[500px] h-[500px] orbit-slow" viewBox="0 0 200 200" fill="none" stroke="#b45309" stroke-width="0.3">
+                <circle cx="100" cy="100" r="90" stroke-dasharray="1 2"/>
+                <circle cx="100" cy="100" r="75"/>
+                <circle cx="100" cy="100" r="60" stroke-dasharray="3 1"/>
+                <line x1="100" y1="5" x2="100" y2="195"/>
+                <line x1="5" y1="100" x2="195" y2="100"/>
+                <polygon points="100,25 165,135 35,135" stroke-width="0.1"/>
+            </svg>
+        </div>
+
+        <div class="max-w-6xl mx-auto text-center relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 bg-amber-600/5 border border-amber-600/20 rounded-full text-amber-800 text-xs tracking-wider mb-3 font-semibold">
+                <i class="fa-solid fa-wand-sparkles text-amber-600 animate-pulse"></i>
+                <span id="header-date-tag">今日能量星历读取中...</span>
+            </div>
+            <h1 class="cinzel-title text-3xl md:text-4xl font-extrabold text-[#2d263b] tracking-widest mb-2">
+                ASTRAL ORACLE • 绿茵星轨抽牌器
+            </h1>
+            <p class="text-xs text-amber-900/60 max-w-xl mx-auto leading-relaxed">
+                在心中默想您要探寻的赛事或今日偏财运，点击“洗牌并抽取”，
+                即可开启78张大/小阿尔卡纳全牌灵能，读取战局走势与今日偏财推荐。
+            </p>
+        </div>
+    </header>
+
+    <!-- 核心互动面板 -->
+    <main class="max-w-6xl w-full mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 flex-grow">
+        
+        <!-- 左侧：3D塔罗抽牌交互（占5栏） -->
+        <section class="lg:col-span-5 flex flex-col items-center justify-center">
+            <div class="mystic-border rounded-3xl p-8 bg-white/90 backdrop-blur-md w-full max-w-sm text-center relative">
+                
+                <!-- 牌组堆数指示器 -->
+                <div class="text-[10px] uppercase tracking-widest text-amber-700/60 font-semibold mb-6 flex justify-between items-center px-2">
+                    <span>🔮 全副 78 张灵牌</span>
+                    <span id="current-deck-status" class="bg-amber-600/5 px-2 py-0.5 rounded-full text-amber-800 border border-amber-600/10">已洗牌</span>
+                </div>
+
+                <!-- 3D塔罗牌盒容器 -->
+                <div class="perspective-1000 w-48 h-80 mx-auto mb-8 cursor-pointer" onclick="handleCardClick()">
+                    <div id="tarot-card-inner" class="tarot-card-inner w-full h-full rounded-2xl relative shadow-md">
+                        
+                        <!-- 1. 卡背 (默认状态) -->
+                        <div class="card-face card-back rounded-2xl border-2 border-amber-600/20 p-2 flex flex-col items-center justify-between">
+                            <div class="w-full h-full border border-dashed border-amber-600/30 rounded-xl flex flex-col items-center justify-center relative">
+                                <span class="text-amber-700/35 text-5xl mb-3"><i class="fa-solid fa-compass"></i></span>
+                                <span class="text-[10px] uppercase tracking-widest text-amber-800/40 font-bold">Tarot of Football</span>
+                                <div class="absolute inset-x-0 bottom-4 text-center text-3xs text-amber-800/30">点击或在下方按钮洗牌抽取</div>
+                            </div>
+                        </div>
+
+                        <!-- 2. 卡面 (简约白色线框牌面) -->
+                        <div id="tarot-card-front" class="card-face card-front rounded-2xl border-2 border-amber-600/30 p-3 flex flex-col items-between justify-between">
+                            
+                            <!-- 牌卡类别：大/小阿尔 -->
+                            <div class="text-[9px] uppercase tracking-wider text-amber-700/70 border-b border-amber-600/10 pb-1.5 w-full text-center" id="tarot-front-type">
+                                Major Arcana
+                            </div>
+                            
+                            <!-- 优雅极简的线框主图 -->
+                            <div class="w-full h-36 border border-amber-600/15 rounded-lg flex items-center justify-center bg-[#faf9f6]/80 my-2 relative overflow-hidden">
+                                <span id="tarot-front-icon" class="text-5xl text-amber-700/80"></span>
+                                <!-- 背景几何图案 -->
+                                <div class="absolute inset-0 opacity-[0.03] flex items-center justify-center pointer-events-none">
+                                    <i class="fa-solid fa-circle-nodes text-9xl"></i>
+                                </div>
+                            </div>
+
+                            <!-- 正逆位及名称 -->
+                            <div class="text-center w-full pb-1">
+                                <span class="text-3xs tracking-widest px-2.5 py-0.5 rounded-full font-bold uppercase" id="tarot-front-position">正位</span>
+                                <h4 class="font-extrabold text-base text-gray-800 mt-2" id="tarot-front-name">愚人 0</h4>
+                            </div>
+
+                            <div class="text-[8px] text-amber-800/30 font-light tracking-widest border-t border-amber-600/10 pt-1.5 w-full text-center">
+                                ★ ASTRAL ORACLE SYSTEM ★
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- 操作按钮组 -->
+                <div class="space-y-3">
+                    <button id="draw-btn" onclick="drawTarotCard()" class="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-bold text-xs py-3.5 px-6 rounded-xl shadow-md shadow-amber-900/10 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-shuffle"></i>
+                        <span>洗牌并抽取命运之牌</span>
+                    </button>
+                    <p class="text-[10px] text-gray-400">抽牌器全面收录22张主牌+56张元素牌，每次概率纯净随机。</p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 右侧：抽牌解读结果（占7栏） -->
+        <section class="lg:col-span-7 flex flex-col justify-between space-y-6">
+            
+            <!-- 默认未抽牌提示 -->
+            <div id="result-placeholder" class="mystic-border rounded-3xl p-12 bg-white/60 text-center flex flex-col items-center justify-center flex-grow min-h-[350px]">
+                <div class="w-16 h-16 rounded-full bg-amber-500/5 border border-amber-500/15 flex items-center justify-center text-amber-600 mb-4 animate-pulse">
+                    <i class="fa-solid fa-moon text-2xl"></i>
+                </div>
+                <h3 class="font-bold text-gray-800 text-sm mb-1">未开启命运指引</h3>
+                <p class="text-xs text-gray-400 max-w-sm leading-relaxed">
+                    请在心中专注于你的目标赛事或今日偏财走向，然后点击左侧的卡背或“洗牌抽取”按钮，激活宇宙绿茵星轨的微观同频。
+                </p>
+            </div>
+
+            <!-- 抽牌结果解读面板 (默认隐藏) -->
+            <div id="result-panel" class="hidden space-y-6 flex-grow fade-in-active">
+                
+                <!-- 1. 牌意基本阐释 -->
+                <div class="mystic-border rounded-3xl p-6 bg-white relative overflow-hidden">
+                    <div class="absolute -top-12 -right-12 w-28 h-28 bg-amber-600/5 rounded-full blur-xl pointer-events-none"></div>
+                    <span class="text-[9px] uppercase tracking-wider text-amber-700 font-bold block mb-1">🪐 命运之灵释义</span>
+                    <h3 class="font-extrabold text-lg text-gray-800 flex items-center gap-2 mb-2">
+                        <span id="res-card-title">愚人 0</span>
+                        <span id="res-card-pos" class="text-xs px-2 py-0.5 rounded-full font-bold">正位</span>
+                    </h3>
+                    <p id="res-card-desc" class="text-xs text-gray-600 leading-relaxed font-light"></p>
+                </div>
+
+                <!-- 2. 世界杯竞技多维深度提示 -->
+                <div class="mystic-border rounded-3xl p-6 bg-white border-l-4 border-l-amber-600">
+                    <span class="text-[9px] uppercase tracking-wider text-amber-700 font-bold block mb-3"><i class="fa-solid fa-shield"></i> 绿茵竞技战术深度提示</span>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- 球队强度/走势 -->
+                        <div class="p-3 bg-[#faf9f6] rounded-xl border border-amber-600/10">
+                            <span class="text-xs font-bold text-gray-800 flex items-center gap-1.5 mb-1">
+                                <i class="fa-solid fa-chart-line text-amber-700 text-2xs"></i> 1. 球队强度与战术势能
+                            </span>
+                            <p id="hint-team" class="text-[11px] text-gray-600 leading-relaxed font-light"></p>
+                        </div>
+                        
+                        <!-- 大小球 -->
+                        <div class="p-3 bg-[#faf9f6] rounded-xl border border-amber-600/10">
+                            <span class="text-xs font-bold text-gray-800 flex items-center gap-1.5 mb-1">
+                                <i class="fa-solid fa-circle-half-stroke text-amber-700 text-2xs"></i> 2. 大小球倾角预判
+                            </span>
+                            <p id="hint-overs" class="text-[11px] text-gray-600 leading-relaxed font-light"></p>
+                        </div>
+
+                        <!-- 半全场 -->
+                        <div class="p-3 bg-[#faf9f6] rounded-xl border border-amber-600/10">
+                            <span class="text-xs font-bold text-gray-800 flex items-center gap-1.5 mb-1">
+                                <i class="fa-solid fa-clock-rotate-left text-amber-700 text-2xs"></i> 3. 半全场走势结构
+                            </span>
+                            <p id="hint-halftime" class="text-[11px] text-gray-600 leading-relaxed font-light"></p>
+                        </div>
+
+                        <!-- 进球数与比分区间 -->
+                        <div class="p-3 bg-[#faf9f6] rounded-xl border border-amber-600/10">
+                            <span class="text-xs font-bold text-gray-800 flex items-center gap-1.5 mb-1">
+                                <i class="fa-solid fa-list-ol text-amber-700 text-2xs"></i> 4. 进球数与比分锚定
+                            </span>
+                            <p id="hint-score" class="text-[11px] text-gray-600 leading-relaxed font-light"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 今日偏财星座契合推荐 -->
+                <div class="mystic-border rounded-3xl p-6 bg-amber-50/10 border border-dashed border-amber-600/30">
+                    <span class="text-[9px] uppercase tracking-wider text-purple-800 font-bold block mb-3"><i class="fa-solid fa-star-of-david"></i> 星盘与偏财星座契合推荐</span>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <span class="text-xs font-bold text-gray-800">今日最完美契合投注星座：</span>
+                            <p id="hint-zodiacs" class="text-xs text-purple-900 font-semibold mt-1"></p>
+                        </div>
+                        <div class="p-2.5 bg-white rounded-lg border border-amber-600/15 text-[10px] text-gray-500 max-w-xs leading-relaxed">
+                            <strong>星体建议：</strong> 上述星座由于今天守护星运行到财富相位，能完美接收此牌正向磁场。
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- 下方：十二星座竞技偏财运（日历天体自动更新） -->
+    <section class="max-w-6xl w-full mx-auto px-4 pb-12 z-10">
+        <div class="mystic-border rounded-3xl p-8 bg-white/95">
+            <div class="border-b border-amber-600/10 pb-4 mb-6 text-center sm:text-left flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h3 class="cinzel-title font-bold text-lg text-amber-950 flex items-center justify-center sm:justify-start gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-amber-700"></i>
+                        <span>十二星座每日偏财竞技星历</span>
+                    </h3>
+                    <p class="text-3xs text-gray-400 uppercase tracking-widest mt-1">Astral Daily Sports Fortune Board</p>
+                </div>
+                <div class="text-xs font-semibold text-amber-800 bg-amber-500/5 py-1 px-3.5 border border-amber-500/10 rounded-full inline-block self-center sm:self-auto">
+                    每日零点自动更新运势 • <span id="board-date-tag"></span>
+                </div>
+            </div>
+
+            <!-- 星座列表 -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" id="zodiac-board">
+                <!-- 由JavaScript自动根据每日日期哈希生成运势 -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 免责声明 -->
+    <footer class="w-full border-t border-amber-500/10 py-8 bg-[#f5f1e9] text-center text-xs text-gray-500/70 space-y-2">
+        <div class="flex items-center justify-center gap-2 text-amber-800/80">
+            <i class="fa-regular fa-compass"></i>
+            <span class="cinzel-title tracking-wider font-bold">TAROT REVELATION • WORLD CUP ORACLE</span>
+            <i class="fa-regular fa-moon"></i>
+        </div>
+        <p class="max-w-2xl mx-auto px-4 text-[10px] text-gray-500/60 leading-relaxed">
+            本页提供的78张塔罗牌解读与每日十二星座偏财运由日历算法种子哈希生成。
+            玄学娱乐，切勿迷信。体育竞技充满变数，我们强烈倡导理性、公益购买彩票，远离任何形式的非法投机。
+        </p>
+    </footer>
+
+    <!-- JavaScript 核心逻辑 -->
+    <script>
+        // 78张塔罗牌全牌组数据库
+        const TAROT_ORACLE = {
+            // 22张大阿尔卡纳主牌
+            major: [
+                { id: 0, name: "愚人 0", icon: "fa-compass", desc: "全新旅程、冒险、无限可能性。不被既往数据和偏见束缚的变局。" },
+                { id: 1, name: "魔术师 I", icon: "fa-wand-magic-sparkles", desc: "创造力、行动、主导、足智多谋。核心主教练战术变阵具有绝对奇效。" },
+                { id: 2, name: "女祭司 II", icon: "fa-moon", desc: "直觉、潜意识、沉静、静待转机。场面极闷、守方通过顽强意志死守防线。" },
+                { id: 3, name: "女皇 III", icon: "fa-crown", desc: "繁荣、收获、攻势如潮、多点开花。锋线火力全开，收获极大数量进球。" },
+                { id: 4, name: "皇帝 IV", icon: "fa-chess-king", desc: "权威、秩序、极其稳固的大巴防线。铁血纪律，强弱战中弱方几乎难以逾越。" },
+                { id: 5, name: "教皇 V", icon: "fa-scroll", desc: "传统、正统战术、默契防守。保守的一方更易通过正规套路完成防守。" },
+                { id: 6, name: "恋人 VI", icon: "fa-heart", desc: "选择、绝妙精密的默契配合。多核双前锋精妙连线破门，极具观赏性。" },
+                { id: 7, name: "战车 VII", icon: "fa-truck-monster", desc: "意志力制胜、冲击力、大步前行。主打速度反击和疯狂中前场压迫。" },
+                { id: 8, name: "力量 VIII", icon: "fa-shield-halved", desc: "意志、耐力、驯服、下半场发力。强力抗压，终场前15分钟进球能量爆棚。" },
+                { id: 9, name: "隐士 IX", icon: "fa-lightbulb", desc: "自省、迷失、进功乏术。球队战术保守、相互绞杀，小球倾向严重。" },
+                { id: 10, name: "命运之轮 X", icon: "fa-arrows-spin", desc: "转折、奇迹爆冷、宿命大反转。战局瞬息万变，落后方戏剧性逆转比赛。" },
+                { id: 11, name: "正义 XI", icon: "fa-scale-balanced", desc: "公平、势均力敌、拉锯平盘。双方在战术执行与对抗上基本持平，大趋平局。" },
+                { id: 12, name: "倒吊人 XII", icon: "fa-hourglass-half", desc: "牺牲、等待突破、隐忍。适合逆向思考、博取弱方让球受让的冷门。" },
+                { id: 13, name: "死神 XIII", icon: "fa-ghost", desc: "旧战术破灭、彻底瓦解、阵型撕裂。一方防线惨遭血洗，必须破釜沉舟。" },
+                { id: 14, name: "节制 XIV", icon: "fa-glass-water-droplet", desc: "控球、传控、节奏调和、大拉锯战。慢热控球率大师，通过中场碾压稳稳守成。" },
+                { id: 15, name: "恶魔 XV", icon: "fa-face-frown-open", desc: "粗暴、犯规偏多、情绪失控。极易出现黄红牌、点球、或恶意犯规导致变局。" },
+                { id: 16, name: "高塔 XVI", icon: "fa-bolt", desc: "颠覆、崩溃、超级惨案、防线塌方。防守防线意外崩溃，极易出现大爆发比分。" },
+                { id: 17, name: "星星 XVII", icon: "fa-star", desc: "希望、新星横空出世。博取替补奇兵闪耀，小将建功或精彩远射绝平。" },
+                { id: 18, name: "月亮 XVIII", icon: "fa-circle-half-stroke", desc: "迷雾、诡异失误、冷门丛生。后防线突发低级失误自摆乌龙，大热门不稳。" },
+                { id: 19, name: "太阳 XIX", icon: "fa-sun", desc: "绝对压制、酣畅淋漓的大胜。阳光普照，大热门锋芒毕露，高歌猛进。" },
+                { id: 20, name: "审判 XX", icon: "fa-bullhorn", desc: "绝佳觉醒、生死大判定。点球大战预兆，或补时阶段爆发绝地死里逃生。" },
+                { id: 21, name: "世界 XXI", icon: "fa-globe", desc: "圆满配合、完美零封、全面封锁。攻防一体达到最高境界，优势方完美取胜。" }
+            ],
+            // 56张小阿尔卡纳
+            suits: {
+                wands: { name: "权杖", icon: "fa-fire", element: "火象", desc: "代表行动、强力冲击、奔跑推进与速度对攻战。" },
+                cups: { name: "圣杯", icon: "fa-glass-water", element: "水象", desc: "代表默契配合、情绪管理、沉稳防守与临场心流。" },
+                swords: { name: "宝剑", icon: "fa-hand-fist", element: "风象", desc: "代表防反极快、撕裂防线的长传、以及敏捷变阵。" },
+                pentacles: { name: "星币", icon: "fa-coins", element: "土象", desc: "代表扎实稳打、全员退防、防守大巴与坚固阵地战。" }
+            },
+            ranks: [
+                { level: "首牌 Ace", scoreHint: "1球爆发", goals: "1-2球" },
+                { level: "二", scoreHint: "双向进球/势均力敌", goals: "2球" },
+                { level: "三", scoreHint: "多点开花", goals: "3球以上" },
+                { id: 4, level: "四", scoreHint: "防守稳固", goals: "0-2球" },
+                { id: 5, level: "五", scoreHint: "对抗纠缠激烈", goals: "2-3球" },
+                { id: 6, level: "六", scoreHint: "平稳推进", goals: "2-4球" },
+                { id: 7, level: "七", scoreHint: "破局艰难", goals: "1-2球" },
+                { id: 8, level: "八", scoreHint: "快节奏连续进球", goals: "3-4球" },
+                { id: 9, level: "九", scoreHint: "严守到底", goals: "0-1球" },
+                { id: 10, level: "十", scoreHint: "高频进球大战", goals: "4球以上" },
+                { level: "侍从 Page", scoreHint: "年轻小将破局", goals: "1-3球" },
+                { level: "骑士 Knight", scoreHint: "反击如风", goals: "2-3球" },
+                { level: "女王 Queen", scoreHint: "控制局势", goals: "1-2球" },
+                { level: "国王 King", scoreHint: "全面掌控统治力", goals: "2-4球" }
+            ]
+        };
+
+        const zodiacsInfo = [
+            { id: "aries", name: "白羊座", icon: "fa-aries", date: "3.21-4.19" },
+            { id: "taurus", name: "金牛座", icon: "fa-taurus", date: "4.20-5.20" },
+            { id: "gemini", name: "双子座", icon: "fa-gemini", date: "5.21-6.21" },
+            { id: "cancer", name: "巨蟹座", icon: "fa-cancer", date: "6.22-7.22" },
+            { id: "leo", name: "狮子座", icon: "fa-leo", date: "7.23-8.22" },
+            { id: "virgo", name: "处女座", icon: "fa-virgo", date: "8.23-9.22" },
+            { id: "libra", name: "天秤座", icon: "fa-libra", date: "9.23-10.23" },
+            { id: "scorpio", name: "天蝎座", icon: "fa-scorpio", date: "10.24-11.22" },
+            { id: "sagittarius", name: "射手座", icon: "fa-sagittarius", date: "11.23-12.21" },
+            { id: "capricorn", name: "摩羯座", icon: "fa-capricorn", date: "12.22-1.19" },
+            { id: "aquarius", name: "水瓶座", icon: "fa-aquarius", date: "1.20-2.18" },
+            { id: "pisces", name: "双鱼座", icon: "fa-pisces", date: "2.19-3.20" }
+        ];
+
+        // 占星运势混沌文本库，用于哈希拼装
+        const fortuneTexts = [
+            "今日行运星群对齐命宫，偏财感知度如泉涌。适宜博取进攻型大比分。",
+            "水星与冥王星呈大合相，思维理智且不被大冷门迷惑，今日平局指数较高。",
+            "火星照耀第十宫，能量冲锋力十足。极易随手博取逆风大爆冷，一鸣惊人。",
+            "月亮相位顺调，心境极度安稳，建议参考小球并采取双向求稳让球策略。",
+            "土星逆行施加制约，今日财运呈现波动。宜反向购买，谨防跟热倒灶。"
+        ];
+
+        let isShuffling = false;
+
+        // 页面初始化
+        window.onload = function() {
+            const today = new Date();
+            const dateStr = today.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('header-date-tag').textContent = `今日星历：${dateStr} (CST)`;
+            document.getElementById('board-date-tag').textContent = dateStr;
+            
+            renderZodiacBoard();
+        };
+
+        // 种子伪随机数生成器 (保证每天运势自动、稳定更新，但不同日期截然不同)
+        function getSeededRandom(seed) {
+            const x = Math.sin(seed++) * 10000;
+            return x - Math.floor(x);
+        }
+
+        // 根据日期生成每天的星座运势
+        function renderZodiacBoard() {
+            const container = document.getElementById('zodiac-board');
+            const today = new Date();
+            // 以 年*10000 + 月*100 + 日 作为哈希基准
+            const dateSeedBase = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+
+            container.innerHTML = zodiacsInfo.map((z, idx) => {
+                const zSeed = dateSeedBase + idx;
+                const luckStrength = Math.floor(getSeededRandom(zSeed) * 3) + 3; // 3-5颗星
+                const textIdx = Math.floor(getSeededRandom(zSeed + 20) * fortuneTexts.length);
+                const starStr = "★".repeat(luckStrength) + "☆".repeat(5 - luckStrength);
+                
+                // 推荐玩法
+                const playType = luckStrength >= 4 ? "🔥 强力大比分/冲高" : "🛡️ 稳固让平/双守平局";
+                
+                return `
+                    <div class="p-4 rounded-2xl bg-[#faf9f6] border border-amber-600/10 hover:border-amber-600/30 transition shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-amber-700 text-lg"><i class="fa-solid ${z.icon}"></i></span>
+                                <span class="font-bold text-xs text-gray-800">${z.name}</span>
+                            </div>
+                            <div class="text-[8px] text-gray-400 font-light mb-2">${z.date}</div>
+                            <div class="text-[10px] text-amber-600 tracking-wider mb-2 font-bold">${starStr}</div>
+                            <p class="text-[11px] text-gray-500 leading-relaxed mb-3 font-light">${fortuneTexts[textIdx]}</p>
+                        </div>
+                        <div class="text-[10px] text-purple-900 bg-purple-500/5 border border-purple-500/10 py-1 px-2 rounded-md font-semibold text-center mt-1">
+                            推荐：${playType}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 触发卡背点击抽牌
+        function handleCardClick() {
+            if (!isShuffling) {
+                drawTarotCard();
+            }
+        }
+
+        // 抽取78张塔罗牌主函数
+        function drawTarotCard() {
+            if (isShuffling) return;
+            isShuffling = true;
+
+            const cardInner = document.getElementById('tarot-card-inner');
+            const frontType = document.getElementById('tarot-front-type');
+            const frontIcon = document.getElementById('tarot-front-icon');
+            const frontName = document.getElementById('tarot-front-name');
+            const frontPos = document.getElementById('tarot-front-position');
+            const frontCard = document.getElementById('tarot-card-front');
+            const cardBack = document.querySelector('.card-back');
+
+            // 1. 播放洗牌动画状态
+            cardInner.classList.add('shuffling-active');
+            document.getElementById('current-deck-status').textContent = "正在剧烈洗牌...";
+
+            setTimeout(() => {
+                // 2. 清除洗牌动画，准备3D翻牌
+                cardInner.classList.remove('shuffling-active');
+
+                // 完全随机分配：35% 大阿尔卡纳，65% 小阿尔卡纳
+                const isMajor = Math.random() < 0.35;
+                const isUpright = Math.random() < 0.7; // 70%正位率
+
+                let cardName = "";
+                let cardIcon = "";
+                let cardType = "";
+                let cardDesc = "";
+                let teamHint = "";
+                let oversHint = "";
+                let halftimeHint = "";
+                let scoreHint = "";
+                let recommendedZodiacs = "";
+
+                if (isMajor) {
+                    // 大牌处理
+                    const majorArr = TAROT_ORACLE.major;
+                    const card = majorArr[Math.floor(Math.random() * majorArr.length)];
+                    cardName = card.name;
+                    cardIcon = card.icon;
+                    cardType = "Major Arcana (大阿尔卡纳)";
+                    cardDesc = card.desc;
+
+                    if (isUpright) {
+                        teamHint = `<strong>【主攻掌控】</strong> 牌面能量顺畅流通。说明进攻能力处于爆发顶点。主队或大热门战术执行度极高，适合高歌猛进。`;
+                        oversHint = `<strong>【进攻大球】</strong> 行星正位顺行，能量极其充盈。强烈推荐关注2.5球、3球以上的大球局。`;
+                        halftimeHint = `<strong>【主攻/半全场】</strong> 优势方上半场即有极大建树。推荐：半全场“胜胜”或“平胜”。`;
+                        scoreHint = `<strong>【精准比分预测】</strong> 推荐锁定比分：2-0, 3-1, 2-1 (高命中率首选)。进球数聚焦在3-4球之间。`;
+                    } else {
+                        teamHint = `<strong>【气运退行】</strong> 逆位导致能量倾塌。提防主力伤停，强队在战术上容易自负而自乱防线，属于高爆冷征兆。`;
+                        oversHint = `<strong>【防守小球】</strong> 逆位能量受到阻隔。双方在禁区内对抗纠缠严重，闷平概率大，主博受让小球。`;
+                        halftimeHint = `<strong>【半全场逆转】</strong> 局势极其诡异莫测。防备半全场“平负”或“负平”，属于反向奇袭之局。`;
+                        scoreHint = `<strong>【精准比分预测】</strong> 比分聚焦：0-1, 1-1, 0-2 (避开大胜比分)。进球数控制在0-2球范围内。`;
+                    }
+
+                } else {
+                    // 小牌处理 (4个元素 * 14张牌)
+                    const suitsKeys = Object.keys(TAROT_ORACLE.suits);
+                    const suitKey = suitsKeys[Math.floor(Math.random() * suitsKeys.length)];
+                    const suit = TAROT_ORACLE.suits[suitKey];
+                    const rankIdx = Math.floor(Math.random() * TAROT_ORACLE.ranks.length);
+                    const rank = TAROT_ORACLE.ranks[rankIdx];
+
+                    cardName = `${suit.name}${rank.level}`;
+                    cardIcon = suit.icon;
+                    cardType = `Minor Arcana (${suit.element} • ${suit.name}牌组)`;
+                    cardDesc = suit.desc;
+
+                    if (isUpright) {
+                        teamHint = `<strong>【主攻优势】</strong> ${suit.element}能量正位爆发：${suit.desc}。攻守双方战力匹配度完美契合常理与历史规律。`;
+                        oversHint = `<strong>【中低大球】</strong> 正位流。进球倾向为：${rank.scoreHint}。属于较为健康的对攻，进球数适中。`;
+                        halftimeHint = `<strong>【稳中获利】</strong> 局势多呈现一方持续压制。推荐半全场：“胜胜”或“平平”。`;
+                        scoreHint = `<strong>【精确比分预测】</strong> 目标进球区间定位在：${rank.goals}。推荐精准比分比对：1-0, 2-1, 1-1。`;
+                    } else {
+                        teamHint = `<strong>【能量受滞】</strong> ${suit.element}能量发生逆行失调。极易在防守端出现无谓犯规、甚至是手球红牌导致场面极度偏斜。`;
+                        oversHint = `<strong>【逆位小球】</strong> 战局频遭切碎，比赛流畅度低。力推总进球数锁定小球方向，推荐博1-2球。`;
+                        halftimeHint = `<strong>【冷平博防】</strong> 场局容易在中场拉锯纠缠。推荐半全场走势：“平平”或“胜平”。`;
+                        scoreHint = `<strong>【精确比分预测】</strong> 进球总数定位偏低。比分锚定推荐：0-0, 1-1, 1-0。`;
+                    }
+                }
+
+                // 每日推荐星座分配（根据抽取的卡牌与元素的火土风水进行契合挑选）
+                if (cardName.includes("权杖") || cardName.includes("太阳") || cardName.includes("战车")) {
+                    recommendedZodiacs = "白羊座 ♈、狮子座 ♌、射手座 ♐（火象冲锋，偏财气势旺盛）";
+                } else if (cardName.includes("圣杯") || cardName.includes("月亮") || cardName.includes("节制")) {
+                    recommendedZodiacs = "巨蟹座 ♋、天蝎座 ♏、双鱼座 ♓（直觉灵敏度拉满，适合追逐稳固平局）";
+                } else if (cardName.includes("宝剑") || cardName.includes("愚人") || cardName.includes("魔术师")) {
+                    recommendedZodiacs = "双子座 ♊、天秤座 ♎、水瓶座 ♒（思维极速运转，能精准捕获冷门时机）";
+                } else {
+                    recommendedZodiacs = "金牛座 ♉、处女座 ♍、摩羯座 ♑（稳健行运，适合低调守门方案，求稳取胜）";
+                }
+
+                // 3. 渲染到卡面DOM
+                frontType.textContent = cardType;
+                frontIcon.className = `text-5xl text-amber-700/80 fa-solid ${cardIcon}`;
+                frontName.textContent = cardName;
+                frontPos.textContent = isUpright ? "正位" : "逆位";
+
+                if (isUpright) {
+                    frontPos.className = "text-3xs tracking-widest px-2.5 py-0.5 rounded-full font-bold uppercase bg-amber-600/10 border border-amber-600/20 text-amber-800";
+                } else {
+                    frontPos.className = "text-3xs tracking-widest px-2.5 py-0.5 rounded-full font-bold uppercase bg-purple-600/10 border border-purple-600/20 text-purple-800";
+                }
+
+                // 播放翻转动效
+                cardInner.classList.add('tarot-card-flip');
+                cardBack.classList.add('hidden');
+                frontCard.classList.remove('hidden');
+
+                // 4. 显示右侧解读结果
+                document.getElementById('res-card-title').textContent = cardName;
+                document.getElementById('res-card-pos').textContent = isUpright ? "【正位】" : "【逆位】";
+                document.getElementById('res-card-pos').className = isUpright ? "text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-600/10 text-amber-800 border border-amber-600/20" : "text-xs px-2.5 py-0.5 rounded-full font-bold bg-purple-600/10 text-purple-800 border border-purple-600/20";
+                document.getElementById('res-card-desc').innerHTML = `<strong>牌面启迪：</strong>${cardDesc}`;
+
+                // 填充多维度竞技预测
+                document.getElementById('hint-team').innerHTML = teamHint;
+                document.getElementById('hint-overs').innerHTML = oversHint;
+                document.getElementById('hint-halftime').innerHTML = halftimeHint;
+                document.getElementById('hint-score').innerHTML = scoreHint;
+
+                // 推荐星座
+                document.getElementById('hint-zodiacs').textContent = recommendedZodiacs;
+
+                // 显示解读面板
+                document.getElementById('result-placeholder').classList.add('hidden');
+                const resPanel = document.getElementById('result-panel');
+                resPanel.classList.remove('hidden');
+                resPanel.classList.add('fade-in-active');
+
+                // 5. 更新洗牌器状态
+                document.getElementById('current-deck-status').textContent = `已成功抽取 ${cardName} (${isUpright ? "正位" : "逆位"})`;
+                isShuffling = false;
+
+                // 清除淡入动效类，防止二次抽卡时动画丢失
+                setTimeout(() => {
+                    resPanel.classList.remove('fade-in-active');
+                }, 500);
+
+            }, 1200); // 1.2秒极速洗牌感官
+        }
+    </script>
+</body>
+</html>
+
+```
